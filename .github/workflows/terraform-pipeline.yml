@@ -1,0 +1,93 @@
+name: "Terraform" 
+# Nombre del workflow. Ayuda a identificarlo en la lista de workflows de GitHub Actions.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+# Define los eventos que activan este workflow. En este caso, cuando hay un push a la rama "main" o cuando se crea/modifica un pull request.
+
+jobs:
+  terraform:
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        # Configura el entorno para que descargue el código fuente del repositorio.
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          # Configura Terraform en el entorno con una versión específica.
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          # Usa un token secreto (almacenado en GitHub Secrets) para autenticarte con Terraform Cloud.
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+        # Ejecuta "terraform fmt -check" para verificar que el código esté correctamente formateado.
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        # Inicializa el entorno de trabajo de Terraform descargando módulos y configurando backend.
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        # Valida los archivos de configuración de Terraform para asegurar que sean sintácticamente correctos.
+
+      - name: Terraform Plan
+        id: plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -no-color -input=false
+        continue-on-error: true
+        # Genera un plan de ejecución para mostrar los cambios que se realizarían.
+        # Se ejecuta solo si el evento es un pull request.
+        # "continue-on-error" permite que el workflow continúe incluso si esta etapa falla.
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+        # Agrega un comentario al pull request con el resultado de las etapas anteriores.
+        # Muestra los resultados de "fmt", "init", "validate" y "plan", y si hubo errores.
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+        # Si el plan falla, termina el workflow con un error.
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+        # Aplica los cambios de Terraform automáticamente si el push es a la rama "main".
