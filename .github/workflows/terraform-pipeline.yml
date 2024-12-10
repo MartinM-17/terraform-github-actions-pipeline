@@ -88,6 +88,6 @@ jobs:
         # Si el plan falla, termina el workflow con un error.
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
+        if: github.event_name == 'push'
+        run: terraform apply -auto-approve
         # Aplica los cambios de Terraform automáticamente si el push es a la rama "main".
