@@ -77,6 +77,7 @@ resource "aws_security_group" "SG_Ned" {
   }
 }
 
+
 resource "aws_instance" "Web_Ned" {
   ami                    = "ami-0c02fb55956c7d316" # Amazon Linux 2 Free Tier
   instance_type          = "t2.micro"
