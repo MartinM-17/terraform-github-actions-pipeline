@@ -8,6 +8,7 @@ on:
   pull_request:
 # Define los eventos que activan este workflow. En este caso, cuando hay un push a la rama "main" o cuando se crea/modifica un pull request.
 
+
 jobs:
   terraform:
     name: "Terraform"
