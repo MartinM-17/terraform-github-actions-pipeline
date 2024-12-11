@@ -43,9 +43,9 @@ El pipeline se define en `.github/workflows/terraform-pipeline.yml` y ejecuta:
    git add .
    git commit -m "Prueba de pipeline Terraform con GitHub Actions"
    git push origin main
-   ```
 3. Verificar la ejecución en la pestaña **Actions** de GitHub.
 4. Validar los recursos creados en AWS y Terraform Cloud.
+   ```
 
 ## Recursos
 Este proyecto incluye:
